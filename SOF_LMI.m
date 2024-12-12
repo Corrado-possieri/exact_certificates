@@ -7,13 +7,11 @@ exName =  'AC4';
 epsilon = 1e-3;
 % – Load COMPleib test example 
 [A,B1,B,C1,C,D11,D12,D21,nx,nw,nu,nz,ny] = COMPleib(exName);
-% define Cz and Dz
-Cz = C;
-Dz = eye(ny,nu);
-% check if the methid can be applied
+% define the variables
 W = sdpvar(nx,nx);
 M = sdpvar(ny,ny);
 N = sdpvar(nu,ny);
+% define the W LMIs
 LMI = [A*W + W*A' - B*N*C - C'*N'*B' <= -epsilon*eye(nx),...
     W >= epsilon*eye(nx), M*C==C*W];
 options = sdpsettings('solver','mosek','verbose',0);
@@ -23,9 +21,11 @@ sol = optimize(LMI,[],options);
 NN = value(N);
 MM = value(M);
 KK = - NN/MM;
+% if the W LMIs were not succesfull
 if max(real(eig(A+B*KK*C))) < 0
     LMItiming = sol.solvertime;
 else
+    % attempt with the P LMIs
     partialTime = sol.solvertime;
     P = sdpvar(nx,nx);
     M = sdpvar(nu,nu);
